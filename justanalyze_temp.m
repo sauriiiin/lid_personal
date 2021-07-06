@@ -1,48 +1,48 @@
 %%  COLLECT IMAGES WITH NO GRID
 %   Those images that weren't analyzed correctly
 
-        all = zeros(1, size(temp_files, 1));
-        for ii = 1 : size(all, 2)
-            all(ii) = exist(strcat(temp_files{ii}, '.binary'));
-        end
-        pos = find(all==0);
+    all = zeros(1, size(temp_files, 1));
+    for ii = 1 : size(all, 2)
+        all(ii) = exist(strcat(temp_files{ii}, '.binary'));
+    end
+    pos = find(all==0);
 
-        if isempty(pos)
-            disp('All images were successfully analyzed.')
-        else
-            fprintf('%d image/s were not analyzed.\n',length(pos))
-            alt_thresh = input('Would you like to re-analyze all images using a different background threshold? [Y/N] ', 's');
-            if alt_thresh == 'Y'
-                thresh = input('New threshold (default = 1.25): ');
-                params = { ...
-                    'parallel', true, ...
-                    'verbose', true, ...
-                    'grid', OffsetAutoGrid('dimensions', dimensions), ... default
-                    'threshold', BackgroundOffset('offset', thresh) };
-                analyze_directory_of_images(temp_files, params{:} );
+    if isempty(pos)
+        disp('All images were successfully analyzed.')
+    else
+        fprintf('%d image/s were not analyzed.\n',length(pos))
+        alt_thresh = input('Would you like to re-analyze all images using a different background threshold? [Y/N] ', 's');
+        if alt_thresh == 'Y'
+            thresh = input('New threshold (default = 1.25): ');
+            params = { ...
+                'parallel', true, ...
+                'verbose', true, ...
+                'grid', OffsetAutoGrid('dimensions', dimensions), ... default
+                'threshold', BackgroundOffset('offset', thresh) };
+            analyze_directory_of_images(temp_files, params{:} );
 
-                all = zeros(1, size(temp_files, 1));
-                for ii = 1 : size(all, 2)
-                    all(ii) = exist(strcat(temp_files{ii}, '.binary'));
-                end
-                pos2 = find(all==0);
-                if isempty(pos2)
-                    disp('All images were successfully analyzed with the new threshold.')
-                else
-                    fprintf('%d image/s were not analyzed.\n Manually place grid using previous threshold\n',length(pos))
-                    for ii = 1 : length(pos)
-                        analyze_image( temp_files{pos(ii)}, params{:}, ...
-                            'grid', ManualGrid('dimensions', dimensions), 'threshold', BackgroundOffset('offset', 1.25));
-                    end
-                end
+            all = zeros(1, size(temp_files, 1));
+            for ii = 1 : size(all, 2)
+                all(ii) = exist(strcat(temp_files{ii}, '.binary'));
+            end
+            pos2 = find(all==0);
+            if isempty(pos2)
+                disp('All images were successfully analyzed with the new threshold.')
             else
-                disp('Manually place grid on images')
+                fprintf('%d image/s were not analyzed.\n Manually place grid using previous threshold\n',length(pos))
                 for ii = 1 : length(pos)
                     analyze_image( temp_files{pos(ii)}, params{:}, ...
                         'grid', ManualGrid('dimensions', dimensions), 'threshold', BackgroundOffset('offset', 1.25));
                 end
             end
+        else
+            disp('Manually place grid on images')
+            for ii = 1 : length(pos)
+                analyze_image( temp_files{pos(ii)}, params{:}, ...
+                    'grid', ManualGrid('dimensions', dimensions), 'threshold', BackgroundOffset('offset', 1.25));
+            end
         end
+    end
 
     fprintf('Examine binary images to verify proper colony detection before going forward.\nPress enter to proceed.\n')
     pause

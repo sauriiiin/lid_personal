@@ -12,9 +12,10 @@
 %%  Load Paths to Files and Expt Info
 
     load_scripts;
+    load_toolkit;
 
     file_dir    = input('Path to image directory: ', 's');
-    file_info   = readtable('/Users/SBP29/Desktop/Methionine/Deletion/MET_DEL_INFO.xlsx');
+    file_info   = readtable('/home/sbp29/RAW_Data/Methionine/Deletion/MET_DEL_INFO.xlsx');
     file_info.arm = string(file_info.arm);
     file_info.condition = string(file_info.condition);
     file_info.expt_id = string(file_info.expt_id);
@@ -28,7 +29,7 @@
     
     fileFlags = ~strcmp({filedir.name},'.') & ~strcmp({filedir.name},'..') &...
         ~contains({filedir.name},'.binary') & ~contains({filedir.name},'.cs.txt') &...
-        ~contains({filedir.name},'.info.mat');
+        ~contains({filedir.name},'.info.mat') & ~contains({filedir.name},'.db');
     
     subFiles = filedir(fileFlags);
     for k = 1 : length(subFiles)
