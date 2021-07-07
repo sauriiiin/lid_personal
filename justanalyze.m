@@ -12,6 +12,10 @@
 %%  Load Paths to Files and Expt Info
 
     load_toolkit;
+%   use info.txt in the directory as a example
+%   place your file in the MATLAB directory
+    fileID = fopen(sprintf('%s/info.txt',toolkit_path),'r');
+    info = textscan(fileID, '%s%s');
 
     file_dir    = input('Path to image directory: ', 's');
     file_info   = readtable(input('Path to EXPT INFO file: ', 's'));
