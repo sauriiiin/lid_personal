@@ -11,11 +11,11 @@
 
 %%  Load Paths to Files and Expt Info
 
-    load_scripts;
     load_toolkit;
 
     file_dir    = input('Path to image directory: ', 's');
-    file_info   = readtable('/home/sbp29/RAW_Data/Methionine/Deletion/MET_DEL_INFO.xlsx');
+    file_info   = readtable(input('Path to EXPT INFO file: ', 's'));
+%     readtable('/home/sbp29/RAW_Data/Methionine/Deletion/MET_DEL_INFO.xlsx');
     file_info.arm = string(file_info.arm);
     file_info.condition = string(file_info.condition);
     file_info.expt_id = string(file_info.expt_id);
@@ -70,6 +70,9 @@
     metadata.filepath = string(metadata.filepath);
     
     metadata = join(metadata, file_info, 'Keys',{'batch','plate'});
+    metadata.hours = round(metadata.hours);
+    metadata = sortrows(metadata,{'batch','hours','plate'},...
+        {'ascend','ascend','ascend'});
     
 %%  PLATE DENSITY AND ANALYSIS PARAMETERS
 
@@ -89,6 +92,9 @@
                     metadata.stage_id == stgs(s) & ...
                     metadata.arm == arms(a)));
                 
+                fprintf('Analyzing %s %s %s at %d.\n',...
+                    expi(e), stgs(s), arms(a), density);
+                
                 if density == 6144
                     dimensions = [64 96];
                 elseif density == 1536
@@ -105,7 +111,13 @@
                     'grid', OffsetAutoGrid('dimensions', dimensions), ... default
                     'threshold', BackgroundOffset('offset', 1.25) }; % default = 1.25
             
-                analyze_directory_of_images(temp_files, params{:} );
+                img2cs(temp_files, dimensions, params);
+                
+                disp('Proceeding to upload raw data to mySQL.')
+                    
+                cs_data = loadcs(temp_files);
+                
+                cs2sql(cs_data, info, expi(e), stgs(s), arms(a), density);
             end
         end
     end
