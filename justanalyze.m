@@ -118,6 +118,18 @@
                 cs_data = loadcs(temp_files);
                 
                 cs2sql(cs_data, info, expi(e), stgs(s), arms(a), density);
+                
+                    disp('Cleaning raw data to remove borders and light artifact.')
+    
+                tablename_clean  = sprintf('%s_%d_CLEAN',expt_set,density);
+
+                exec(conn, sprintf('drop table %s',tablename_clean));
+                exec(conn, sprintf(['create table %s (primary key (pos, hours)) ',...
+                    '(select * from %s)'], tablename_clean, tablename_raw));
+
+                exec(conn, sprintf(['update %s ',...
+                    'set average = NULL ',...
+                    'where average <= 10'],tablename_clean));
             end
         end
     end
