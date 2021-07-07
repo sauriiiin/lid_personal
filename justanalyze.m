@@ -119,7 +119,7 @@
                 
                 cs2sql(cs_data, info, expi(e), stgs(s), arms(a), density);
                 
-                    disp('Cleaning raw data to remove borders and light artifact.')
+                disp('Cleaning raw data to remove borders and light artifact.')
     
                 tablename_clean  = sprintf('%s_%d_CLEAN',expt_set,density);
 
