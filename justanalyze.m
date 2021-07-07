@@ -117,11 +117,14 @@
                     
                 cs_data = loadcs(temp_files);
                 
-                cs2sql(cs_data, info, expi(e), stgs(s), arms(a), density);
+                cs2sql(cs_data, info,...
+                    expi(e), stgs(s), arms(a), density,...
+                    unique(metadata.hours));
                 
                 disp('Cleaning raw data to remove borders and light artifact.')
     
-                tablename_clean  = sprintf('%s_%d_CLEAN',expt_set,density);
+                tablename_clean  = sprintf('%s_%s_%s_%d_CLEAN',...
+                    expi(e), stgs(s), arms(a),density);
 
                 exec(conn, sprintf('drop table %s',tablename_clean));
                 exec(conn, sprintf(['create table %s (primary key (pos, hours)) ',...

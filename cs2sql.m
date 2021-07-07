@@ -6,7 +6,7 @@
 %   upload colony size data to SQL
 %   dr.saurin.parikh@gmail.com
 
-function cs2sql(cs_data, info, expt_name, stage_name, arm_name, density)
+function cs2sql(cs_data, info, expt_name, stage_name, arm_name, density, hours)
 
     sql_info = {info{1,2}{2:4}}; % {usr, pwd, db}
     conn = connSQL(sql_info);
@@ -28,14 +28,11 @@ function cs2sql(cs_data, info, expt_name, stage_name, arm_name, density)
     colnames_raw = {'pos','hours','average'};
 
     tmpdata = [];
-    uhours = unique(metadata.hours);
-    for ii=1:length(uhours)
-        tmpdata = [tmpdata; [p2c.pos, ones(length(p2c.pos),1)*uhours(ii)]];
+    for ii=1:length(hours)
+        tmpdata = [tmpdata; [p2c.pos, ones(length(p2c.pos),1)*hours(ii)]];
     end
 
     data = [tmpdata,cs_data];
-    tic
     datainsert(conn,tablename_raw,colnames_raw,data);
-    toc
     
 end
