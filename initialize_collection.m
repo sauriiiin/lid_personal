@@ -7,7 +7,7 @@
     
     
     for k = 1:length(unique(collection.x384plate_1))
-      data{k} = col2grid(collection.strain_id(collection.x384plate_1 == 1));
+      data{k} = col2grid(collection.strain_id(collection.x384plate_1 == k));
     end
     
     for kk = (length(unique(collection.x384plate_1)) + 1):(length(unique(collection.x384plate_1)) + n_ref)
