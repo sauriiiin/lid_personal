@@ -10,13 +10,13 @@
         'select * from PROTOGENE_COLLECTION']);
     plate384 = fetch(conn, 'select * from PLATE384');
     n_ref = 5;
-    
-    n_col_plates = length(unique(collection.x384plate_1(~isnan(collection.x384plate_1))));
+    col_plates = unique(collection.x384plate(~isnan(collection.x384plate)));
+    n_col_plates = length(col_plates);
     
     for k = 1:n_col_plates
 %       data{k} = col2grid(collection.strain_id(collection.x384plate_1 == k));
-      temp = collection(collection.x384plate_1 == k,:);
-      temp = outerjoin(temp, plate384, 'Keys', {'x384col_1', 'x384row_1'},...
+      temp = collection(collection.x384plate == col_plates(k),:);
+      temp = outerjoin(temp, plate384, 'Keys', {'x384col', 'x384row'},...
         'Type', 'right','MergeKeys',true);
       temp = sortrows(temp,'pos','ascend');
       data{k} = col2grid(temp.strain_id);
