@@ -116,7 +116,7 @@
                     'grid', OffsetAutoGrid('dimensions', dimensions), ... default
                     'threshold', BackgroundOffset('offset', 1.25) }; % default = 1.25
             
-                img2cs(temp_files, dimensions, params, 'Y'); % justanalyze = 'Y'
+                img2cs(temp_files, dimensions, params, 'N'); % justanalyze = 'Y'
                 
 %                 if input('Do you want to upload data to MySQL? [Y/N] ', 's') == 'Y'
 %                     disp('Proceeding to upload...')
