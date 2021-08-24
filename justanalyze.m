@@ -14,8 +14,8 @@
     load_toolkit;
 %   use info.txt in the directory as a example
 %   place your file in the MATLAB directory
-    info_path   = input('Path to info.txt directory: ', 's');
-    fileID = fopen(sprintf('%s/info.txt',info_path),'r');
+%     info_path   = input('Path to info.txt directory: ', 's');
+    fileID = fopen(sprintf('%s/info.txt',toolkit_path),'r');
     info = textscan(fileID, '%s%s');
 
     file_dir    = input('Path to image directory: ', 's');
@@ -120,7 +120,7 @@
                     'grid', OffsetAutoGrid('dimensions', dimensions), ... default
                     'threshold', BackgroundOffset('offset', 1.25) }; % default = 1.25
             
-                img2cs(temp_files, dimensions, params, 'F'); % justanalyze = 'Y'
+                img2cs(temp_files, dimensions, params, 'N'); % justanalyze = 'Y'
                 
                 if input('Do you want to upload data to MySQL? [Y/N] ', 's') == 'Y'
                     disp('Proceeding to upload...')
@@ -176,6 +176,9 @@
                             'where pos in ',...
                             '(select pos from %s)'],tablename_clean,tablename_sbox));
                     end
+                    
+                    fprintf('Press enter to proceed.\n')
+                    pause
 
                     if input('Do you want to perform LID Normalization? [Y/N] ', 's') == 'Y'
                         cont.name = info{1,2}{10};
