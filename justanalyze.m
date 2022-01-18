@@ -47,11 +47,28 @@
         metadata = [metadata; temp_meta];
     end
     metadata = [metadata files];
-    metadata = sortrows(metadata, [3 4 5]);
+    metadata = sortrows(metadata, [1 3 4 5]);
     
 %%  GETTING TIME FROM METADATA
 
     hours = [];
+    interval = 3;
+    expi_nos = unique(metadata(:,1));
+    for exp = 1:length(expi_nos)
+        file_nos = length(metadata(strcmpi(metadata(:,1), expi_nos{exp}),3));
+%         if rem(file_nos, 33) ~= 0
+%            tmp_plts =  unique(metadata(strcmpi(metadata(:,1), expi_nos{exp}),3));
+%            for tp = 1:length(tmp_plts)
+%                length(metadata(strcmpi(metadata(:,1), expi_nos{exp}) &...
+%                    strcmpi(metadata(:,3), tmp_plts{tp}),...
+%                    3))
+%            end
+%         end
+        plate_nos = length(unique(metadata(strcmpi(metadata(:,1), expi_nos{exp}),3)));
+        tmp_hrs = 0:interval:file_nos/plate_nos*3-1;
+        hours = [hours; repmat(tmp_hrs, 1, 33)'];
+    end
+    
     plate_nos = unique(metadata(:,3));
     for i = 1:size(plate_nos,1)
         temp_meta = metadata(strcmpi(metadata(:,3), plate_nos(i)),:);
@@ -78,7 +95,7 @@
     metadata.time = string(metadata.time);
     metadata.filepath = string(metadata.filepath);
     
-    metadata = join(metadata, file_info, 'Keys',{'batch','plate'});
+    metadata = innerjoin(metadata, file_info, 'Keys',{'batch','plate'});
     metadata.hours = round(metadata.hours);
     metadata = sortrows(metadata,{'batch','hours','plate'},...
         {'ascend','ascend','ascend'});
@@ -91,7 +108,7 @@
         for s = 1:length(stgs)
             arms = unique(metadata.arm(metadata.expt_id == expi(e) &...
                 metadata.stage_id == stgs(s)));
-            for a = 1:length(arms)
+            for a = 5%1:length(arms)
                 temp_files = metadata.filepath(metadata.expt_id == expi(e) &...
                     metadata.stage_id == stgs(s) & ...
                     metadata.arm == arms(a));
@@ -120,13 +137,17 @@
                     'grid', OffsetAutoGrid('dimensions', dimensions), ... default
                     'threshold', BackgroundOffset('offset', 1.25) }; % default = 1.25
             
-                img2cs(temp_files, dimensions, params, 'N'); % justanalyze = 'Y'
+%                 img2cs(temp_files, dimensions, params, 'N'); % justanalyze = 'Y'
                 
                 if input('Do you want to upload data to MySQL? [Y/N] ', 's') == 'Y'
                     disp('Proceeding to upload...')
 
                     cs_data = loadcs(temp_files);
-
+% 
+%                     temp_hrs = 0:3:length(temp_files)/33*3-1;
+%                     cs2sql(cs_data, info,...
+%                         expi(e), stgs(s), arms(a), density,...
+%                         temp_hrs);
                     cs2sql(cs_data, info,...
                         expi(e), stgs(s), arms(a), density,...
                         unique(metadata.hours(metadata.expt_id == expi(e) &...
@@ -155,30 +176,30 @@
                         'set average = NULL ',...
                         'where average <= 10'],tablename_clean));
                     
-                    if input(sprintf('Do you want a smudgebox for %s %s %s %d? [Y/N] ',...
-                            expi(e), stgs(s), arms(a),density), 's') == 'Y'
-                        tablename_sbox   = sprintf('%s_%s_%s_%d_smudgebox',expi(e), stgs(s), arms(a),density);
-                        p2c_info = {info{1,2}{5},'plate','row','col'};
-                        sbox = input('Enter colony positions to reject: [density, plate, row, col; density, plate, row, col;... ] \n');
-                        exec(conn, sprintf('drop table %s',tablename_sbox));
-                        exec(conn, sprintf(['create table %s ',...
-                            '(pos bigint not null, primary key (pos))'],tablename_sbox));
-                        for i = 1:size(sbox,1)
-                            exec(conn, sprintf(['insert into %s ',...
-                                'select pos from %s ',...
-                                'where density = %d ',...
-                                'and plate = %d and row = %d and col = %d'],...
-                                tablename_sbox, p2c_info{1},...
-                                sbox(i,:)));
-                        end  
-                        exec(conn, sprintf(['update %s ',...
-                            'set average = NULL ',...
-                            'where pos in ',...
-                            '(select pos from %s)'],tablename_clean,tablename_sbox));
-                    end
-                    
-                    fprintf('Press enter to proceed.\n')
-                    pause
+%                     if input(sprintf('Do you want a smudgebox for %s %s %s %d? [Y/N] ',...
+%                             expi(e), stgs(s), arms(a),density), 's') == 'Y'
+%                         tablename_sbox   = sprintf('%s_%s_%s_%d_smudgebox',expi(e), stgs(s), arms(a),density);
+%                         p2c_info = {info{1,2}{5},'plate','row','col'};
+%                         sbox = input('Enter colony positions to reject: [density, plate, row, col; density, plate, row, col;... ] \n');
+%                         exec(conn, sprintf('drop table %s',tablename_sbox));
+%                         exec(conn, sprintf(['create table %s ',...
+%                             '(pos bigint not null, primary key (pos))'],tablename_sbox));
+%                         for i = 1:size(sbox,1)
+%                             exec(conn, sprintf(['insert into %s ',...
+%                                 'select pos from %s ',...
+%                                 'where density = %d ',...
+%                                 'and plate = %d and row = %d and col = %d'],...
+%                                 tablename_sbox, p2c_info{1},...
+%                                 sbox(i,:)));
+%                         end  
+%                         exec(conn, sprintf(['update %s ',...
+%                             'set average = NULL ',...
+%                             'where pos in ',...
+%                             '(select pos from %s)'],tablename_clean,tablename_sbox));
+%                     end
+%                     
+%                     fprintf('Press enter to proceed.\n')
+%                     pause
 
                     if input('Do you want to perform LID Normalization? [Y/N] ', 's') == 'Y'
                         cont.name = info{1,2}{10};
@@ -209,11 +230,11 @@
                             p2c_info{2},p2c_info{1},density,p2c_info{2}));
 
     % % % % % % %                     
-                        if input('Do you want to perform source-normalization? [Y/N] ', 's') == 'Y'
-                            IL = 1; % 1 = to source norm / 0 = to not
-                        else
+%                         if input('Do you want to perform source-normalization? [Y/N] ', 's') == 'Y'
+%                             IL = 1; % 1 = to source norm / 0 = to not
+%                         else
                             IL = 0;
-                        end
+%                         end
 
                         hours = fetch(conn, sprintf(['select distinct hours from %s ',...
                             'order by hours asc'], tablename_clean));
@@ -221,6 +242,10 @@
                         fit_data = LinearInNorm(hours,n_plates,p2c_info,cont.name,...
                             tablename_p2o,tablename_clean,IL,density,dimensions,sql_info);
 
+                        if isopen(conn) == 0
+                            conn = connSQL(sql_info);
+                        end
+                        
                         exec(conn, sprintf('drop table %s',tablename_norm));
                         exec(conn, sprintf(['create table %s ( ',...
                                     'pos bigint not NULL, ',...
@@ -242,8 +267,8 @@
                             'order by a.hours, a.pos asc)'],...
                             tablename_fit,tablename_norm,tablename_p2o,tablename_p2s));                  
                     end
-
-    % % % % %                 
+% 
+%     % % % % %                 
                     if input('Do you want to calculate empirical p-values? [Y/N] ', 's') == 'Y'
 
                         clear data
