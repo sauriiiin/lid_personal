@@ -103,7 +103,7 @@
 %%  PLATE DENSITY AND ANALYSIS PARAMETERS
 
     expi = unique(metadata.expt_id);
-    for e = 3%1:length(expi)
+    for e = 1:length(expi)
         stgs = unique(metadata.stage_id(metadata.expt_id == expi(e)));
         for s = 1:length(stgs)
             arms = unique(metadata.arm(metadata.expt_id == expi(e) &...
@@ -141,28 +141,27 @@
                 
 %                 if input('Do you want to upload data to MySQL? [Y/N] ', 's') == 'Y'
 %                     disp('Proceeding to upload...')
-% 
-%                     cs_data = loadcs(temp_files);
+
+                    cs_data = loadcs(temp_files);
+                    cs2sql(cs_data, info,...
+                        expi(e), stgs(s), arms(a), density,...
+                        unique(metadata.hours(metadata.expt_id == expi(e) &...
+                        metadata.stage_id == stgs(s) &...
+                        metadata.arm == arms(a))));
 % % 
-% %                     temp_hrs = 0:3:length(temp_files)/33*3-1;
 % %                     cs2sql(cs_data, info,...
 % %                         expi(e), stgs(s), arms(a), density,...
-% %                         temp_hrs);
-%                     cs2sql(cs_data, info,...
-%                         expi(e), stgs(s), arms(a), density,...
-%                         unique(metadata.hours(metadata.expt_id == expi(e) &...
-%                         metadata.stage_id == stgs(s) &...
-%                         metadata.arm == arms(a))));
-% 
-%                     disp('Cleaning raw data to remove borders and light artifact.')
-% 
-%                     sql_info = {info{1,2}{2:4}}; % {usr, pwd, db}
-%                     conn = connSQL(sql_info);
-%                     
-%                     tablename_bpos   = info{1,2}{9};
-%                     tablename_raw    = sprintf('%s_%s_%s_%d_RAW',expi(e), stgs(s), arms(a),density);
-%                     tablename_clean  = sprintf('%s_%s_%s_%d_CLEAN',expi(e), stgs(s), arms(a),density);
-% 
+% %                         [0:2:142]);
+
+                    disp('Cleaning raw data to remove borders and light artifact.')
+
+                    sql_info = {info{1,2}{3:5}}; % {usr, pwd, db}
+                    conn = connSQL(sql_info);
+                    
+                    tablename_bpos   = sprintf('%s_borderpos',expi(e));
+                    tablename_raw    = sprintf('%s_%s_%s_%d_RAW',expi(e), stgs(s), arms(a),density);
+                    tablename_clean  = sprintf('%s_%s_%s_%d_CLEAN',expi(e), stgs(s), arms(a),density);
+
 %                     exec(conn, sprintf('drop table %s',tablename_clean));
 %                     exec(conn, sprintf(['create table %s (primary key (pos, hours)) ',...
 %                         '(select * from %s)'], tablename_clean, tablename_raw));
@@ -174,7 +173,7 @@
 % 
 %                     exec(conn, sprintf(['update %s ',...
 %                         'set average = NULL ',...
-%                         'where average <= 10'],tablename_clean));
+%                         'where average <= 300'],tablename_clean));
 %                     
 % %                     if input(sprintf('Do you want a smudgebox for %s %s %s %d? [Y/N] ',...
 % %                             expi(e), stgs(s), arms(a),density), 's') == 'Y'
@@ -190,7 +189,7 @@
 % %                                 'where density = %d ',...
 % %                                 'and plate = %d and row = %d and col = %d'],...
 % %                                 tablename_sbox, p2c_info{1},...
-% %                                 sbox(i,:)));
+% %                                 sbvzox(i,:)));
 % %                         end  
 % %                         exec(conn, sprintf(['update %s ',...
 % %                             'set average = NULL ',...
@@ -200,9 +199,9 @@
 % %                     
 % %                     fprintf('Press enter to proceed.\n')
 % %                     pause
-% 
+
 %                     if input('Do you want to perform LID Normalization? [Y/N] ', 's') == 'Y'
-%                         cont.name = info{1,2}{10};
+%                         cont.name = info{1,2}{11};
 % 
 %                         tablename_lac       = sprintf('%s_%s_%s_%d_LAC',expi(e), stgs(s), arms(a),density);
 %                         tablename_norm      = sprintf('%s_%s_%s_%d_NORM',expi(e), stgs(s), arms(a),density);
@@ -212,13 +211,13 @@
 %                         tablename_pval      = sprintf('%s_%s_%s_%d_PVALUE',expi(e), stgs(s), arms(a),density);
 %                         tablename_res       = sprintf('%s_%s_%s_%d_RES',expi(e), stgs(s), arms(a),density);
 % 
-%                         tablename_p2s  = info{1,2}{6};
-%                         tablename_p2o  = info{1,2}{7};
-%                         tablename_s2o  = info{1,2}{8};
+%                         tablename_p2s       = sprintf('%s_pos2strainid',expi(e));
+%                         tablename_p2o       = sprintf('%s_pos2orf_name',expi(e));
+%                         tablename_s2o       = sprintf('%s_strainid2orf_name',expi(e));
 % 
-%                         tablename_p2p   = info{1,2}{11};
+%                         tablename_p2p       = sprintf('%s_pos2rep',expi(e));
 % 
-%                         p2c_info = {info{1,2}{5},'plate','row','col'};
+%                         p2c_info = {sprintf('%s_pos2coor',expi(e)),'plate_no','plate_row','plate_col'};
 %                         p2c = fetch(conn, sprintf(['select * from %s a ',...
 %                             'where density = %d ',...
 %                             'order by a.%s, a.%s, a.%s'],...
@@ -229,12 +228,13 @@
 %                             'order by %s asc'],...
 %                             p2c_info{2},p2c_info{1},density,p2c_info{2}));
 % 
-%     % % % % % % %                     
+% % % % % % % % %                     
 % %                         if input('Do you want to perform source-normalization? [Y/N] ', 's') == 'Y'
 % %                             IL = 1; % 1 = to source norm / 0 = to not
 % %                         else
-%                             IL = 0;
+% %                             IL = 0;
 % %                         end
+%                         IL = 1;
 % 
 %                         hours = fetch(conn, sprintf(['select distinct hours from %s ',...
 %                             'order by hours asc'], tablename_clean));
@@ -266,9 +266,9 @@
 %                             'where a.pos = b.pos and b.pos = c.pos ',...
 %                             'order by a.hours, a.pos asc)'],...
 %                             tablename_fit,tablename_norm,tablename_p2o,tablename_p2s));                  
-%                     end
-% % 
-% %     % % % % %                 
+% %                     end
+% 
+% % % % % % %                 
 %                     if input('Do you want to calculate empirical p-values? [Y/N] ', 's') == 'Y'
 % 
 %                         clear data
@@ -289,7 +289,7 @@
 %                     %     sqlwrite(conn,tablename_fits,struct2table(stat_data));
 %                         toc  
 % 
-%     % % % % % % 
+% % % % % % % % 
 % 
 %                         exec(conn, sprintf('drop table %s',tablename_pval));
 %                         exec(conn, sprintf(['create table %s (strain_id int not null, ',...
@@ -367,7 +367,9 @@
 %                             pdata{iii}.es                                       = num2cell(es);
 %                             pdata{iii}.es(cellfun(@isnan,pdata{iii}.es))        = {[]};
 % 
-%                             sqlwrite(conn,tablename_pval,struct2table(pdata{iii}));
+%                             if isempty(pdata{iii}.hours) == 0
+%                                 sqlwrite(conn,tablename_pval,struct2table(pdata{iii}));
+%                             end
 %                         end
 %                     end
 %                 end

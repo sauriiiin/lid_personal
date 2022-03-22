@@ -8,13 +8,13 @@
 
 function cs2sql(cs_data, info, expt_name, stage_name, arm_name, density, hours)
 
-    sql_info = {info{1,2}{2:4}}; % {usr, pwd, db}
+    sql_info = {info{1,2}{3:5}}; % {usr, pwd, db}
     conn = connSQL(sql_info);
     
     tablename_raw  = sprintf('%s_%s_%s_%d_RAW',...
         expt_name,stage_name,arm_name,density);
         
-    p2c_info = {info{1,2}{5},'plate','row','col'};
+    p2c_info = {sprintf('%s_pos2coor',expt_name),'plate_no','plate_row','plate_col'};
     p2c = fetch(conn, sprintf(['select * from %s a ',...
         'where density = %d ',...
         'order by a.%s, a.%s, a.%s'],...
