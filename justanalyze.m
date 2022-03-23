@@ -131,10 +131,13 @@
                     'grid', OffsetAutoGrid('dimensions', dimensions), ... default
                     'threshold', BackgroundOffset('offset', 1.25) }; % default = 1.25
             
-                just_analyze = input('Do you want to just analyze? [Y/N] ', 's');
-                img2cs(temp_files, dimensions, params, just_analyze);
+                skip_analysis = input('Do you want to skip image to colony-size analysis? [Y/N] ', 's');
+                if skip_analysis == 'N'
+                    just_analyze = input('Do you want to just analyze? [Y/N] ', 's');
+                    img2cs(temp_files, dimensions, params, just_analyze);
+                end
                 
-                if just_analyze == 'N'
+                if just_analyze == 'N' | skip_analysis == 'Y'
                     if input('Do you want to upload data to MySQL? [Y/N] ', 's') == 'Y'
                         disp('Proceeding to upload...')
 
