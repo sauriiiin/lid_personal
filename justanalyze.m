@@ -63,21 +63,6 @@
     metadata = sortrows(metadata,{'density','expt_id','stage_id','arm','date','time','plate'},...
         {'ascend','ascend','ascend','ascend','ascend','ascend','ascend'});
     
-%%  GETTING TIME FROM METADATA
-%     arms = unique(metadata.arm);
-%     batch_ids = unique(metadata.batch);
-%     for batch = 1:length(batch_ids)
-%         file_nos  = length(metadata.filepath(metadata.batch == expi_nos(exp)));
-%         plate_nos = length(unique(metadata.plate(metadata.batch == expi_nos(exp))));
-%         tmp_hrs   = 0:interval:(file_nos/plate_nos - 1)*interval;
-%         hours     = [hours; repmat(tmp_hrs, 1, plate_nos)'];
-%     end
-% 
-%     metadata = [metadata, num2cell(hours)];
-%     metadata.hours = round(metadata.hours);
-%     metadata = sortrows(metadata,{'batch','hours','plate'},...
-%         {'ascend','ascend','ascend'});
-    
 %%  PLATE DENSITY AND ANALYSIS PARAMETERS
 
     interval = input('Time interval between images: ');
@@ -135,9 +120,11 @@
                 if skip_analysis == 'N'
                     just_analyze = input('Do you want to just analyze? [Y/N] ', 's');
                     img2cs(temp_files, dimensions, params, just_analyze);
+                else
+                    just_analyze = 'N';
                 end
                 
-                if just_analyze == 'N' | skip_analysis == 'Y'
+                if just_analyze == 'N' || skip_analysis == 'Y'
                     if input('Do you want to upload data to MySQL? [Y/N] ', 's') == 'Y'
                         disp('Proceeding to upload...')
 
@@ -163,6 +150,8 @@
                         data_bpos = fetch(conn, sprintf('select * from %s',...
                             tablename_bpos));
                         
+%                         raw_data = fetch(conn, sprintf('select * from %s', tablename_raw));
+%                         clean_data = table2array(raw_data);
                         clean_data = raw_data;
                         clean_data(ismember(clean_data(:,1),data_bpos.pos),3) = NaN;
                         clean_data(clean_data(:,3) < 300, 3) = NaN;
