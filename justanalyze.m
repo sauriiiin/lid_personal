@@ -63,9 +63,42 @@
     metadata = sortrows(metadata,{'density','expt_id','stage_id','arm','date','time','plate'},...
         {'ascend','ascend','ascend','ascend','ascend','ascend','ascend'});
     
+ %% HOURS   
+    hours = [];
+    expi_nos = unique(metadata.expt_id);
+    for exp = 1:length(expi_nos)
+        arm_nos = unique(metadata.arm(strcmpi(metadata.expt_id, expi_nos{exp})));
+        for arm = 1:length(arm_nos)
+            stage_nos = unique(metadata.stage_id(strcmpi(metadata.expt_id, expi_nos{exp}) &...
+                strcmpi(metadata.arm, arm_nos{arm})));
+            for stage = 1:length(stage_nos)
+                plate_nos = unique(metadata.plate(strcmpi(metadata.expt_id, expi_nos{exp}) &...
+                    strcmpi(metadata.arm, arm_nos{arm}) & strcmpi(metadata.stage_id, stage_nos{stage})));
+                for i = 1:length(plate_nos)
+                    temp_meta = metadata(strcmpi(metadata.expt_id, expi_nos{exp}) &...
+                        strcmpi(metadata.arm, arm_nos{arm}) & strcmpi(metadata.stage_id, stage_nos{stage}) &...
+                        metadata.plate == plate_nos(i),:);
+                    
+                    temp_t0 = sprintf('%s %s', temp_meta.date(1), temp_meta.time(1));
+                    hours = [hours; 0];
+                    for ii = 2:size(temp_meta, 1)
+                        temp_tii = sprintf('%s %s', temp_meta.date(ii), temp_meta.time(ii));
+                        [y,m,d,h,mi,s] = datevec(between(datetime(temp_t0,...
+                            'Format', 'MM-dd-yy HH-mm-ss'), ...
+                            datetime(temp_tii,...
+                            'Format', 'MM-dd-yy HH-mm-ss')));
+                        temp_interval = [y*365*24, m*30*24, d*24, h, mi/60, s/(60*60)];
+                        hours = [hours; sum(temp_interval)];
+                    end
+                end
+            end
+        end
+    end
+    metadata.hours = round(hours);
+    
 %%  PLATE DENSITY AND ANALYSIS PARAMETERS
 
-    interval = input('Time interval between images: ');
+%     interval = input('Time interval between images: ');
     
     expi = unique(metadata.expt_id);
     for e = 1:length(expi)
@@ -78,21 +111,21 @@
                     metadata.stage_id == stgs(s) & ...
                     metadata.arm == arms(a),:);
               
-                hours = [];
-                batch_nos  = unique(temp_meta.batch);
-                for batch = 1:length(batch_nos)
-                    file_nos  = length(temp_meta.filepath(temp_meta.batch == batch_nos(batch)));
-                    plate_nos = length(unique(temp_meta.plate(temp_meta.batch == batch_nos(batch))));
-                    if batch == 1
-                        tmp_hrs = 0:interval:(file_nos/plate_nos - 1)*interval;
-                        hours   = [hours; repmat(tmp_hrs, 1, plate_nos)'];
-                    else
-                        file_nos  = length(temp_meta.filepath(temp_meta.batch == batch_nos(batch)));
-                        plate_nos = length(unique(temp_meta.plate(temp_meta.batch == batch_nos(batch))));
-                        tmp_hrs = (hours(end)+interval):interval:((file_nos/plate_nos - 1)*interval+hours(end)+interval);
-                        hours   = [hours; repmat(tmp_hrs, 1, plate_nos)'];
-                    end
-                end
+%                 hours = [];
+%                 batch_nos  = unique(temp_meta.batch);
+%                 for batch = 1:length(batch_nos)
+%                     file_nos  = length(temp_meta.filepath(temp_meta.batch == batch_nos(batch)));
+%                     plate_nos = length(unique(temp_meta.plate(temp_meta.batch == batch_nos(batch))));
+%                     if batch == 1
+%                         tmp_hrs = 0:interval:(file_nos/plate_nos - 1)*interval;
+%                         hours   = [hours; repmat(tmp_hrs, 1, plate_nos)'];
+%                     else
+%                         file_nos  = length(temp_meta.filepath(temp_meta.batch == batch_nos(batch)));
+%                         plate_nos = length(unique(temp_meta.plate(temp_meta.batch == batch_nos(batch))));
+%                         tmp_hrs = (hours(end)+interval):interval:((file_nos/plate_nos - 1)*interval+hours(end)+interval);
+%                         hours   = [hours; repmat(tmp_hrs, 1, plate_nos)'];
+%                     end
+%                 end
 
                 temp_files = cellstr(temp_meta.filepath);
                 density = unique(temp_meta.density);
@@ -110,22 +143,22 @@
                     dimensions = [8 12];
                 end
     
-                params = { ...
-                    'parallel', true, ...
-                    'verbose', true, ...
-                    'grid', OffsetAutoGrid('dimensions', dimensions), ... default
-                    'threshold', BackgroundOffset('offset', 1.25) }; % default = 1.25
-            
-                skip_analysis = input('Do you want to skip image to colony-size analysis? [Y/N] ', 's');
-                if skip_analysis == 'N'
-                    just_analyze = input('Do you want to just analyze? [Y/N] ', 's');
-                    img2cs(temp_files, dimensions, params, just_analyze);
-                else
-                    just_analyze = 'N';
-                end
+%                 params = { ...
+%                     'parallel', true, ...
+%                     'verbose', true, ...
+%                     'grid', OffsetAutoGrid('dimensions', dimensions), ... default
+%                     'threshold', BackgroundOffset('offset', 1.25) }; % default = 1.25
+%             
+%                 skip_analysis = input('Do you want to skip image to colony-size analysis? [Y/N] ', 's');
+%                 if skip_analysis == 'N'
+%                     just_analyze = input('Do you want to just analyze? [Y/N] ', 's');
+%                     img2cs(temp_files, dimensions, params, just_analyze);
+%                 else
+%                     just_analyze = 'N';
+%                 end
                 
-                if just_analyze == 'N' || skip_analysis == 'Y'
-                    if input('Do you want to upload data to MySQL? [Y/N] ', 's') == 'Y'
+%                 if just_analyze == 'N' || skip_analysis == 'Y'
+%                     if input('Do you want to upload data to MySQL? [Y/N] ', 's') == 'Y'
                         disp('Proceeding to upload...')
 
                         cs_data = loadcs(temp_files);
@@ -158,34 +191,34 @@
 
                         datainsert(conn,tablename_clean,{'pos','hours','average'},clean_data);
 
-                        if input(sprintf('Do you want a smudgebox for %s %s %s %d? [Y/N] ',...
-                                expi(e), stgs(s), arms(a),density), 's') == 'Y'
-                            tablename_sbox   = sprintf('%s_%s_%s_%d_smudgebox',expi(e), stgs(s), arms(a),density);
-                            p2c_info = {info{1,2}{6},'plate_no','plate_row','plate_col'};
-                            sbox = input('Enter colony positions to reject: [density, plate, row, col; density, plate, row, col;... ] \n');
-                            exec(conn, sprintf('drop table %s',tablename_sbox));
-                            exec(conn, sprintf(['create table %s ',...
-                                '(pos bigint not null, primary key (pos))'],tablename_sbox));
-                            for i = 1:size(sbox,1)
-                                exec(conn, sprintf(['insert into %s ',...
-                                    'select pos from %s ',...
-                                    'where density = %d ',...
-                                    'and plate_no = %d and plate_row = %d and plate_col = %d'],...
-                                    tablename_sbox, p2c_info{1},...
-                                    sbox(i,:)));
-                            end  
-                            exec(conn, sprintf(['update %s ',...
-                                'set average = NULL ',...
-                                'where pos in ',...
-                                '(select pos from %s)'],tablename_clean,tablename_sbox));
-                        end
-                        
-                        fprintf('Press enter to proceed.\n')
-                        pause
-                        
-                        perform_lid = input('Do you want to perform LID Normalization? [Y/N] ', 's');
-                        
-                        if  perform_lid == 'Y'
+%                         if input(sprintf('Do you want a smudgebox for %s %s %s %d? [Y/N] ',...
+%                                 expi(e), stgs(s), arms(a),density), 's') == 'Y'
+%                             tablename_sbox   = sprintf('%s_%s_%s_%d_smudgebox',expi(e), stgs(s), arms(a),density);
+%                             p2c_info = {info{1,2}{6},'plate_no','plate_row','plate_col'};
+%                             sbox = input('Enter colony positions to reject: [density, plate, row, col; density, plate, row, col;... ] \n');
+%                             exec(conn, sprintf('drop table %s',tablename_sbox));
+%                             exec(conn, sprintf(['create table %s ',...
+%                                 '(pos bigint not null, primary key (pos))'],tablename_sbox));
+%                             for i = 1:size(sbox,1)
+%                                 exec(conn, sprintf(['insert into %s ',...
+%                                     'select pos from %s ',...
+%                                     'where density = %d ',...
+%                                     'and plate_no = %d and plate_row = %d and plate_col = %d'],...
+%                                     tablename_sbox, p2c_info{1},...
+%                                     sbox(i,:)));
+%                             end  
+%                             exec(conn, sprintf(['update %s ',...
+%                                 'set average = NULL ',...
+%                                 'where pos in ',...
+%                                 '(select pos from %s)'],tablename_clean,tablename_sbox));
+%                         end
+%                         
+%                         fprintf('Press enter to proceed.\n')
+%                         pause
+%                         
+%                         perform_lid = input('Do you want to perform LID Normalization? [Y/N] ', 's');
+%                         
+%                         if  perform_lid == 'Y'
                             cont.name = info{1,2}{11};
 
                             tablename_lac       = sprintf('%s_%s_%s_%d_LAC',expi(e), stgs(s), arms(a),density);
@@ -212,13 +245,13 @@
                                 'where density = %d ',...
                                 'order by %s asc'],...
                                 p2c_info{2},p2c_info{1},density,p2c_info{2}));
-    
-                            if input('Do you want to perform source-normalization? [Y/N] ', 's') == 'Y'
+%     
+%                             if input('Do you want to perform source-normalization? [Y/N] ', 's') == 'Y'
                                 IL = 1; % 1 = to source norm / 0 = to not
-                            else
-                                IL = 0;
-                            end
-
+%                             else
+%                                 IL = 0;
+%                             end
+% 
                             hours = fetch(conn, sprintf(['select distinct hours from %s ',...
                                 'order by hours asc'], tablename_clean));
                             hours = hours.hours;
@@ -250,7 +283,7 @@
                                 'order by a.hours, a.pos asc)'],...
                                 tablename_fit,tablename_norm,tablename_p2o,tablename_p2s));  
                             
-                            if input('Do you want to calculate empirical p-values? [Y/N] ', 's') == 'Y'
+%                             if input('Do you want to calculate empirical p-values? [Y/N] ', 's') == 'Y'
 
                                 clear data
 
@@ -352,10 +385,10 @@
                                         sqlwrite(conn,tablename_pval,struct2table(pdata{iii}));
                                     end
                                 end
-                            end
-                        end
-                    end
-                end
+%                             end
+%                         end
+%                     end
+%                 end
             end
         end
     end
